@@ -204,6 +204,113 @@ class ChatView {
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
+    showTypingIndicator() {
+        const existing = this.messagesContainer.querySelector('.typing-indicator');
+        if (existing) return;
+
+        const indicator = document.createElement('div');
+        indicator.className = 'message bot typing-indicator';
+        indicator.innerHTML = `
+            <div class="message-avatar">E</div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        `;
+        this.messagesContainer.appendChild(indicator);
+        this.scrollToBottom();
+    }
+
+    hideTypingIndicator() {
+        const indicator = this.messagesContainer.querySelector('.typing-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    updateServiceIndicator(serviceName) {
+        const indicator = document.getElementById('service-indicator');
+        if (indicator) {
+            indicator.textContent = `Using: ${serviceName}`;
+        }
+    }
+
+    showSettingsModal(services, currentServiceId, currentApiKey, onSave) {
+        const modal = document.createElement('dialog');
+        modal.id = 'settings-modal';
+        modal.className = 'settings-modal';
+
+        modal.innerHTML = `
+            <form method="dialog">
+                <h2>Settings</h2>
+                
+                <label for="service-select">AI Service:</label>
+                <select id="service-select">
+                    ${services.map(s =>
+            `<option value="${s.id}" ${s.id === currentServiceId ? 'selected' : ''}>${s.name}</option>`
+        ).join('')}
+                </select>
+                
+                <div id="api-key-section" style="display: none;">
+                    <label for="api-key-input">Gemini API Key:</label>
+                    <input type="password" id="api-key-input" value="${currentApiKey}" placeholder="Enter your Gemini API key">
+                    <small>Get one at: <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="save-settings-btn">Save</button>
+                    <button type="button" id="cancel-settings-btn">Cancel</button>
+                </div>
+            </form>
+        `;
+
+        document.body.appendChild(modal);
+        modal.showModal();
+
+        const select = modal.querySelector('#service-select');
+        const apiKeySection = modal.querySelector('#api-key-section');
+        const apiKeyInput = modal.querySelector('#api-key-input');
+
+        const toggleApiKeySection = () => {
+            apiKeySection.style.display = select.value === 'gemini' ? 'block' : 'none';
+        };
+
+        toggleApiKeySection();
+        select.addEventListener('change', toggleApiKeySection);
+
+        modal.querySelector('#save-settings-btn').addEventListener('click', () => {
+            const serviceId = select.value;
+            const apiKey = apiKeyInput.value.trim();
+
+            if (serviceId === 'gemini' && !apiKey) {
+                alert('Please enter a Gemini API key');
+                return;
+            }
+
+            onSave(serviceId, apiKey);
+        });
+
+        modal.querySelector('#cancel-settings-btn').addEventListener('click', () => {
+            modal.close();
+            modal.remove();
+        });
+
+        modal.addEventListener('close', () => {
+            modal.remove();
+        });
+    }
+
+    closeSettingsModal() {
+        const modal = document.getElementById('settings-modal');
+        if (modal) {
+            modal.close();
+            modal.remove();
+        }
+    }
+
     getElements() {
         return {
             form: document.getElementById('chat-form'),
@@ -212,6 +319,7 @@ class ChatView {
             importBtn: document.getElementById('import-btn'),
             importFile: document.getElementById('import-file'),
             clearBtn: document.getElementById('clear-btn'),
+            settingsBtn: document.getElementById('settings-btn'),
             messagesContainer: this.messagesContainer
         };
     }

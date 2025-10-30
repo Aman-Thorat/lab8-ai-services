@@ -1,20 +1,24 @@
-import { getElizaResponse } from './eliza.js';
+import ServiceFactory from './services/ServiceFactory.js';
 
 class ChatController {
     constructor(model, view) {
         this.model = model;
         this.view = view;
+        this.serviceFactory = new ServiceFactory();
+        this.currentServiceId = 'eliza';
         this.init();
     }
 
     init() {
         this.model.subscribe((event, data) => this.handleModelUpdate(event, data));
 
-        this.bindEvents();
-
         const messages = this.model.getAllMessages();
         this.view.renderMessages(messages);
         this.view.updateMessageCount(this.model.getMessageCount());
+
+        this.loadSettings();
+
+        this.bindEvents();
     }
 
     bindEvents() {
@@ -22,14 +26,18 @@ class ChatController {
 
         elements.form.addEventListener('submit', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.handleSendMessage();
+            return false;
         });
 
-        elements.exportBtn.addEventListener('click', () => {
+        elements.exportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             this.handleExport();
         });
 
-        elements.importBtn.addEventListener('click', () => {
+        elements.importBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             elements.importFile.click();
         });
 
@@ -37,14 +45,21 @@ class ChatController {
             this.handleImport(e);
         });
 
-        elements.clearBtn.addEventListener('click', () => {
+        elements.clearBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             this.handleClearHistory();
+        });
+
+        elements.settingsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.handleOpenSettings();
         });
 
         elements.messagesContainer.addEventListener('click', (e) => {
             const button = e.target.closest('.btn-small');
             if (!button) return;
 
+            e.preventDefault();
             const action = button.dataset.action;
             const messageId = button.dataset.messageId;
 
@@ -54,6 +69,8 @@ class ChatController {
                 this.handleDeleteMessage(messageId);
             }
         });
+
+        console.log('All event listeners bound successfully');
     }
 
     handleModelUpdate(event, data) {
@@ -100,20 +117,49 @@ class ChatController {
         }
     }
 
-    handleSendMessage() {
+    async handleSendMessage() {
+        console.log('handleSendMessage called');
+
         const elements = this.view.getElements();
         const text = elements.input.value.trim();
 
-        if (!text) return;
+        if (!text) {
+            console.log('Empty message, ignoring');
+            return;
+        }
+
+        console.log('Sending message:', text);
 
         this.model.addMessage(text, true);
-
         elements.input.value = '';
 
-        const botResponse = getElizaResponse(text);
-        setTimeout(() => {
+        this.view.showTypingIndicator();
+
+        try {
+            const service = this.serviceFactory.getCurrentService();
+            console.log('Using service:', service.getName());
+
+            const botResponse = await service.getResponse(text);
+            console.log('Got response:', botResponse);
+
+            this.view.hideTypingIndicator();
             this.model.addMessage(botResponse, false);
-        }, 500);
+
+        } catch (error) {
+            this.view.hideTypingIndicator();
+            console.error('AI service error:', error);
+
+            const errorMsg = `Sorry, I encountered an error: ${error.message}`;
+            this.model.addMessage(errorMsg, false);
+
+            if (this.currentServiceId === 'gemini') {
+                setTimeout(() => {
+                    if (confirm('Gemini is having issues. Would you like to switch to Eliza?')) {
+                        this.switchToService('eliza');
+                    }
+                }, 500);
+            }
+        }
     }
 
     handleEditMessage(messageId) {
@@ -130,8 +176,7 @@ class ChatController {
                     alert(error.message);
                 }
             },
-            () => {
-            }
+            () => {}
         );
     }
 
@@ -196,7 +241,7 @@ class ChatController {
         reader.onload = (e) => {
             try {
                 const data = JSON.parse(e.target.result);
-                const count = this.model.importData(data);
+                this.model.importData(data);
             } catch (error) {
                 alert(`Import failed: ${error.message}`);
             }
@@ -207,6 +252,60 @@ class ChatController {
         };
 
         reader.readAsText(file);
+    }
+
+    handleOpenSettings() {
+        console.log('Opening settings');
+        const availableServices = this.serviceFactory.getAvailableServices();
+        const currentApiKey = this.serviceFactory.getService('gemini').apiKey || '';
+
+        this.view.showSettingsModal(
+            availableServices,
+            this.currentServiceId,
+            currentApiKey,
+            (serviceId, apiKey) => this.handleSaveSettings(serviceId, apiKey)
+        );
+    }
+
+    handleSaveSettings(serviceId, apiKey) {
+        console.log('Saving settings:', serviceId);
+
+        if (apiKey) {
+            this.serviceFactory.setGeminiApiKey(apiKey);
+            localStorage.setItem('gemini-api-key', apiKey);
+        }
+
+        this.switchToService(serviceId);
+
+        localStorage.setItem('ai-service', serviceId);
+
+        this.view.closeSettingsModal();
+    }
+
+    switchToService(serviceId) {
+        try {
+            const service = this.serviceFactory.switchService(serviceId);
+            this.currentServiceId = serviceId;
+            this.view.updateServiceIndicator(service.getName());
+            console.log(`Switched to ${service.getName()}`);
+        } catch (error) {
+            alert(`Failed to switch service: ${error.message}`);
+        }
+    }
+
+    loadSettings() {
+        const savedApiKey = localStorage.getItem('gemini-api-key');
+        if (savedApiKey) {
+            this.serviceFactory.setGeminiApiKey(savedApiKey);
+            console.log('Loaded saved API key');
+        }
+
+        const savedService = localStorage.getItem('ai-service');
+        if (savedService && (savedService === 'eliza' || savedService === 'gemini')) {
+            this.switchToService(savedService);
+        } else {
+            this.switchToService('eliza');
+        }
     }
 }
 

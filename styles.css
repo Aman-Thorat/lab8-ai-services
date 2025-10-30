@@ -315,6 +315,128 @@ body {
     background: black;
 }
 
+.typing-indicator .message-bubble {
+    display: flex;
+    gap: 4px;
+    padding: 16px;
+}
+
+.typing-indicator .dot {
+    width: 8px;
+    height: 8px;
+    background: grey;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-indicator .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        opacity: 0.3;
+        transform: translateY(0);
+    }
+    30% {
+        opacity: 1;
+        transform: translateY(-10px);
+    }
+}
+
+.settings-modal {
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+}
+
+.settings-modal::backdrop {
+    background: rgba(0,0,0,0.5);
+}
+
+.settings-modal form {
+    padding: 24px;
+}
+
+.settings-modal h2 {
+    margin: 0 0 20px;
+    color: #333;
+}
+
+.settings-modal label {
+    display: block;
+    margin: 16px 0 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.settings-modal select,
+.settings-modal input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.settings-modal small {
+    display: block;
+    margin-top: 6px;
+    color: #666;
+    font-size: 12px;
+}
+
+.settings-modal small a {
+    color: #4285f4;
+    text-decoration: none;
+}
+
+.settings-modal small a:hover {
+    text-decoration: underline;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.modal-actions button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#save-settings-btn {
+    background: #4285f4;
+    color: white;
+}
+
+#save-settings-btn:hover {
+    background: #357ae8;
+}
+
+#cancel-settings-btn {
+    background: #f1f3f4;
+    color: #5f6368;
+}
+
+#cancel-settings-btn:hover {
+    background: #e8eaed;
+}
+
 @media (max-width: 640px) {
     .chat-container {
         height: 100vh;
@@ -323,6 +445,11 @@ body {
 
     .chat-header {
         border-radius: 0;
+    }
+
+    .chat-info {
+        flex-direction: column;
+        gap: 4px;
     }
 
     .chat-controls {

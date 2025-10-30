@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Application - MVC</title>
+    <title>AI Chat - MVC with Services</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <main class="chat-container">
     <header class="chat-header">
-        <h1>Eliza Chat</h1>
+        <h1>Chat-Bot</h1>
         <div class="chat-info">
             <span id="message-count">0 messages</span>
+            <span id="service-indicator">Using: Eliza (Local)</span>
             <span id="last-saved"></span>
         </div>
     </header>
@@ -33,6 +34,7 @@
     </form>
 
     <footer class="chat-controls">
+        <button id="settings-btn" aria-label="Open settings">&star; Change AI &star;</button>
         <button id="export-btn" aria-label="Export chat history">Export Chat</button>
         <button id="import-btn" aria-label="Import chat history">Import Chat</button>
         <input type="file" id="import-file" accept=".json" hidden>
